@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+group = 'ru.hse.networks.hw5'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    nettyVersion    = '4.1.115.Final'
+    protobufVersion = '3.25.5'
+    slf4jVersion    = '2.0.13'
+    logbackVersion  = '1.5.6'
+}
+
+dependencies {
+    implementation "io.netty:netty-all:${nettyVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "ch.qos.logback:logback-classic:${logbackVersion}"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+}
+
+application {
+    mainClass = 'ru.hse.networks.hw5.server.Main'
+}
+
+tasks.named('run', JavaExec) {
+    standardInput = System.in
+}
+
+tasks.register('packageClient', Copy) {
+    from 'client'
+    into layout.buildDirectory.dir('client')
+}
+
+tasks.named('build') { dependsOn 'packageClient' }

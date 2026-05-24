@@ -1,0 +1,80 @@
+HW5. WebSocket + Protobuf чат.
+
+ФИО: <вписать>
+Группа: <вписать>
+Дата: <вписать>
+
+Стек: Java 21, Netty 4.1, Gradle, Protocol Buffers (proto3).
+Клиент: чистый JS + protobufjs с CDN.
+Уровень: расширенный (до 10 баллов).
+
+Использование ИИ.
+ИИ использовался: да. Инструмент - Claude.
+С его помощью сделан скелет: build.gradle, схема chat.proto, Netty-пайплайн,
+обработчики, JS-клиент. Я всё прочитал, при необходимости правил, тестировал
+руками (запуск сервера, два-три окна браузера, проверка приватных сообщений
+и ошибок). Готовый код понимаю.
+
+Сервер.
+Запускается через `gradle run`, слушает 8080. Netty-пайплайн:
+HttpServerCodec -> HttpObjectAggregator(64K) -> ChunkedWriteHandler ->
+WebSocketServerCompressionHandler -> HttpStaticFileHandler ->
+WebSocketServerProtocolHandler("/ws", maxFrame=2MB) -> ChatWebSocketHandler.
+HTTP-обработчик отдаёт client/index.html и client/app.js, WebSocket-обработчик
+парсит Protobuf-фреймы.
+ChatRoom хранит пользователей (ConcurrentHashMap), историю (Deque под
+synchronized), иконки. Лимиты: 100 пользователей, 50 строк истории, 50 картинок,
+25 символов на сообщение, 1 МБ на картинку.
+
+Клиент.
+index.html + app.js, никаких фреймворков. protobufjs грузится с jsdelivr.
+При открытии страницы сразу коннектится по ws. После ввода имени и нажатия
+"Join" шлёт JoinRequest. По успешному JoinResponse рисует историю и последнее
+изображение. Если соединение упало - отсчёт 10 секунд и автопереподключение,
+поля ввода заблокированы.
+
+Протокол (chat.proto).
+- proto3, около 13 message + 3 enum.
+- Вложенные сообщения: Attachment.ImageFormat, JoinRequest.ClientInfo,
+  ChatEntry.Attachment, UserIcon.Attachment.
+- oneof payload в ClientEnvelope и ServerEnvelope - один общий конверт
+  на запрос/ответ.
+- repeated: JoinResponse.history, JoinResponse.user_icons.
+- optional (explicit presence в proto3): Attachment.file_name.
+- Поля по умолчанию: ClientInfo.supports_images (bool=false),
+  ChatEntry.is_private (bool=false), Attachment.width_px/height_px (int32=0).
+- Типы: string, bytes, bool, int32, int64, enum.
+- На сервере явно проверяю presence: req.hasIcon(), req.hasAttachment(),
+  непустой recipient, размер data > 0.
+
+Edge cases.
+- Имя занято: JoinResponse{success=false, error_message}.
+- @name отсутствует в чате: ErrorResponse{RECIPIENT_NOT_FOUND}.
+- Текст > 25 символов: ErrorResponse{MESSAGE_TOO_LONG}.
+- Картинка > 1 МБ или не PNG/JPEG: отклоняется на клиенте, повторная проверка
+  на сервере (ErrorResponse{IMAGE_TOO_LARGE}).
+- Текстовый WebSocket-фрейм вместо бинарного: ErrorResponse{INVALID_REQUEST}.
+- Сообщение до Join: ErrorResponse{NOT_JOINED}.
+- Дисконнект: всем участникам уходит PresenceUpdate{LEFT}.
+
+Запуск.
+1) gradle run
+2) http://localhost:8080 в нескольких вкладках, ввести разные имена, Join.
+3) @name текст - приватное сообщение.
+
+Скриншоты решил не добавлять, тк уже снято видео
+
+Видео: см. video_link.txt.
+
+Самопроверка.
+[+] WebSocket binary + Protobuf - ChatWebSocketHandler.java
+[+] proto3, несколько messages - chat.proto
+[+] вложенные messages - Attachment внутри ChatEntry/JoinRequest
+[+] repeated - JoinResponse.history, user_icons
+[+] поля по умолчанию - ClientInfo.supports_images, ChatEntry.is_private
+[+] обработка optional на сервере - hasIcon/hasAttachment/recipient.isEmpty()
+[+] несколько типов - string/bytes/bool/int32/int64/enum
+[+] <=100 клиентов, история 50/50 - ChatRoom.java
+[+] reconnect 10s + countdown - app.js
+[+] @name private + ошибка - ChatWebSocketHandler.java
+[+] icon пользователя - JoinRequest.icon, PresenceUpdate.icon, JoinResponse.user_icons

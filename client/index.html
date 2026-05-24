@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HW5 — WebSocket + Protobuf chat</title>
+    <style>
+        body { font-family: -apple-system, Helvetica, Arial, sans-serif; margin: 16px; max-width: 760px; }
+        h2  { margin: 4px 0 12px; }
+        .row { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+        textarea, input[type=text] { font-family: inherit; font-size: 14px; padding: 6px; }
+        #log { width: 100%; resize: vertical; }
+        #status { color: #666; font-size: 13px; min-height: 18px; }
+        .err   { color: #b00020; }
+        .ok    { color: #1b5e20; }
+        button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
+        #userList { font-size: 13px; color: #444; }
+        #userList .uitem { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; }
+        #userList img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+        #preview img, #incoming img { max-width: 320px; max-height: 240px; border: 1px solid #ccc; }
+        .msg-priv { color: #6a1b9a; }
+    </style>
+</head>
+<body>
+    <h2>HW5 — WebSocket + Protobuf chat</h2>
+
+    <div id="status">Initializing…</div>
+
+    <fieldset id="joinBox">
+        <legend>Join</legend>
+        <div class="row">
+            <label>Name: <input type="text" id="nameInput" maxlength="32" placeholder="your name"></label>
+            <label>Icon (optional): <input type="file" id="iconInput" accept="image/png,image/jpeg"></label>
+            <button id="joinBtn" disabled>Join</button>
+        </div>
+        <div id="joinError" class="err"></div>
+    </fieldset>
+
+    <fieldset id="chatBox" disabled>
+        <legend>Chat</legend>
+        <div class="row">
+            <strong>Online:</strong> <span id="userList"></span>
+        </div>
+        <textarea id="log" rows="10" readonly></textarea>
+        <div id="incoming" class="row"></div>
+        <div class="row">
+            <input type="text" id="msgInput" maxlength="25" placeholder="message (max 25 chars, use @name for private)" style="flex:1; min-width: 280px;">
+            <input type="file" id="fileInput" accept="image/png,image/jpeg">
+            <button id="sendBtn">Send</button>
+        </div>
+        <div id="preview" class="row"></div>
+    </fieldset>
+
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.4.0/dist/protobuf.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

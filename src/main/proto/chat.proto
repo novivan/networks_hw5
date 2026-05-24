@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package chat;
+
+option java_package         = "ru.hse.networks.hw5.proto";
+option java_outer_classname = "ChatProto";
+
+message Attachment {
+  enum ImageFormat {
+    UNKNOWN = 0;
+    JPEG    = 1;
+    PNG     = 2;
+  }
+  ImageFormat format    = 1;
+  bytes       data      = 2;
+  optional string file_name = 3;
+  int32       width_px  = 4;
+  int32       height_px = 5;
+}
+
+message ClientInfo {
+  string protocol_version = 1;
+  bool   supports_images  = 2;
+  int32  client_build     = 3;
+}
+
+message JoinRequest {
+  string     name        = 1;
+  ClientInfo client_info = 2;
+  Attachment icon        = 3;
+}
+
+message ChatMessageRequest {
+  string     text       = 1;
+  Attachment attachment = 2;
+  string     recipient  = 3;
+}
+
+message LeaveRequest {
+  string reason = 1;
+}
+
+message ClientEnvelope {
+  oneof payload {
+    JoinRequest        join    = 1;
+    ChatMessageRequest message = 2;
+    LeaveRequest       leave   = 3;
+  }
+  int64 request_id = 16;
+}
+
+message ChatEntry {
+  string     sender     = 1;
+  string     text       = 2;
+  int64      timestamp  = 3;
+  Attachment attachment = 4;
+  bool       is_private = 5;
+  string     recipient  = 6;
+}
+
+message UserIcon {
+  string     name = 1;
+  Attachment icon = 2;
+}
+
+message JoinResponse {
+  bool       success       = 1;
+  string     error_message = 2;
+  repeated ChatEntry history = 3;
+  Attachment last_image = 4;
+  repeated UserIcon user_icons = 5;
+}
+
+message ErrorResponse {
+  enum Code {
+    UNKNOWN              = 0;
+    NAME_TAKEN           = 1;
+    NOT_JOINED           = 2;
+    RECIPIENT_NOT_FOUND  = 3;
+    MESSAGE_TOO_LONG     = 4;
+    IMAGE_TOO_LARGE      = 5;
+    INVALID_REQUEST      = 6;
+    INTERNAL             = 7;
+  }
+  Code   code    = 1;
+  string message = 2;
+}
+
+message ChatBroadcast {
+  ChatEntry entry = 1;
+}
+
+message PresenceUpdate {
+  enum Kind {
+    JOINED = 0;
+    LEFT   = 1;
+  }
+  Kind       kind = 1;
+  string     name = 2;
+  Attachment icon = 3;
+}
+
+message ServerEnvelope {
+  oneof payload {
+    JoinResponse   join_response = 1;
+    ChatBroadcast  broadcast     = 2;
+    ErrorResponse  error         = 3;
+    PresenceUpdate presence      = 4;
+  }
+  int64 request_id = 16;
+}
